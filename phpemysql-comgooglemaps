@@ -1,0 +1,192 @@
+INDOG-SQL
+
+-- phpMyAdmin SQL Dump
+-- version 4.6.4
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Tempo de geração: 17/06/2024 às 17:26
+-- Versão do servidor: 5.7.14
+-- Versão do PHP: 7.0.10
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Banco de dados: `indog`
+--
+
+-- --------------------------------------------------------
+
+CONEXAO.PHP
+  
+<?php
+	$servidor = "localhost";
+	$usuario = "root";
+	$senha = "";
+	$dbname = "indog";
+	
+	//Criar a conexao
+	$conn = mysqli_connect($servidor, $usuario, $senha, $dbname);
+
+-- --------------------------------------------------------
+
+
+INDEX.PHP
+
+<!DOCTYPE html >
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <title>Using MySQL and PHP with Google Maps</title>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <script>
+      var customLabel = {
+        restaurant: {
+          label: 'R'
+        },
+        bar: {
+          label: 'B'
+        }
+      };
+
+        function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: new google.maps.LatLng(-25.494938, -49.294372),
+          zoom: 5
+        });
+        var infoWindow = new google.maps.InfoWindow;
+
+          // Change this depending on the name of your PHP or XML file
+          downloadUrl('resultado.php', function(data) {
+            var xml = data.responseXML;
+            var markers = xml.documentElement.getElementsByTagName('marker');
+            Array.prototype.forEach.call(markers, function(markerElem) {
+              var name = markerElem.getAttribute('name');
+              var address = markerElem.getAttribute('address');
+              var type = markerElem.getAttribute('type');
+              var point = new google.maps.LatLng(
+                  parseFloat(markerElem.getAttribute('lat')),
+                  parseFloat(markerElem.getAttribute('lng')));
+
+              var infowincontent = document.createElement('div');
+              var strong = document.createElement('strong');
+              strong.textContent = name
+              infowincontent.appendChild(strong);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var text = document.createElement('text');
+              text.textContent = address
+              infowincontent.appendChild(text);
+              var icon = customLabel[type] || {};
+              var marker = new google.maps.Marker({
+                map: map,
+                position: point,
+                label: icon.label
+              });
+              marker.addListener('click', function() {
+                infoWindow.setContent(infowincontent);
+                infoWindow.open(map, marker);
+              });
+            });
+          });
+        }
+
+
+
+      function downloadUrl(url, callback) {
+        var request = window.ActiveXObject ?
+            new ActiveXObject('Microsoft.XMLHTTP') :
+            new XMLHttpRequest;
+
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            request.onreadystatechange = doNothing;
+            callback(request, request.status);
+          }
+        };
+
+        request.open('GET', url, true);
+        request.send(null);
+      }
+
+      function doNothing() {}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
+    </script>
+  </body>
+</html>
+
+-- --------------------------------------------------------
+
+
+RESULTADO.PHP
+
+<?php
+require("conexao.php");
+
+function parseToXML($htmlStr){
+	$xmlStr=str_replace('<','&lt;',$htmlStr);
+	$xmlStr=str_replace('>','&gt;',$xmlStr);
+	$xmlStr=str_replace('"','&quot;',$xmlStr);
+	$xmlStr=str_replace("'",'&#39;',$xmlStr);
+	$xmlStr=str_replace("&",'&amp;',$xmlStr);
+	return $xmlStr;
+}
+
+// Select all the rows in the markers table
+$result_markers = "SELECT * FROM markers";
+$resultado_markers = mysqli_query($conn, $result_markers);
+
+header("Content-type: text/xml");
+
+// Start XML file, echo parent node
+echo '<markers>';
+
+// Iterate through the rows, printing XML nodes for each
+while ($row_markers = mysqli_fetch_assoc($resultado_markers)){
+  // Add to XML document node
+  echo '<marker ';
+  echo 'name="' . parseToXML($row_markers['name']) . '" ';
+  echo 'address="' . parseToXML($row_markers['address']) . '" ';
+  echo 'lat="' . $row_markers['lat'] . '" ';
+  echo 'lng="' . $row_markers['lng'] . '" ';
+  echo 'type="' . $row_markers['type'] . '" ';
+  echo '/>';
+}
+
+// End XML file
+echo '</markers>';
+
+
+
+
+
+
+
+
+  
